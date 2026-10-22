@@ -445,6 +445,17 @@ Rus salatası..."></textarea>
 
     // Comprehensive Aliases & Shorthands used in warehouse operations
     const SHORTCUTS = {
+      "viyanasandvic": "VİYANA EKMEKLİ SANDVİÇ",
+      "viyanaekmeklisandvic": "VİYANA EKMEKLİ SANDVİÇ",
+      "viyanaekmekli": "VİYANA EKMEKLİ SANDVİÇ",
+      "viyana": "VİYANA EKMEKLİ SANDVİÇ",
+      "koresandvic": "KORE SANDVİÇ",
+      "koresand": "KORE SANDVİÇ",
+      "kore": "KORE SANDVİÇ",
+      "kumrusandvic": "KUMRU SANDVİÇ",
+      "kumru": "KUMRU SANDVİÇ",
+      "sosislisandvic": "SOSİSLİ SANDVİÇ",
+      "sosisli": "SOSİSLİ SANDVİÇ",
       "ruzsal": "RUS SALATASI",
       "haydarl": "HAYDARİ",
       "zaksuka": "ŞAKŞUKA",
@@ -572,6 +583,19 @@ Rus salatası..."></textarea>
         const iNorm = normalizeTr(item.name);
         if (iNorm.includes(qNorm) || (qNorm.length > 5 && qNorm.includes(iNorm))) {
           return item;
+        }
+      }
+
+      // 3.5 Specific prefix / subset token match for sandwiches and wraps
+      const qWords = qNorm.split(/[^a-z0-9]/).filter(w => w.length >= 3);
+      if (qWords.length > 0) {
+        for (const item of masterList) {
+          if (usedCodes.has(item.code)) continue;
+          const iNorm = normalizeTr(item.name);
+          const allWordsPresent = qWords.every(word => iNorm.includes(word));
+          if (allWordsPresent) {
+            return item;
+          }
         }
       }
 
