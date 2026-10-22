@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="tr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Depo Adres Dağıtım Sistemi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS for Excel generation -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Phosphor Icons for iOS-like rounded glyphs -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-mono-code { font-family: 'JetBrains Mono', monospace; }
+    /* iOS style scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col bg-[#F2F2F7] text-slate-850">
+
+  <!-- iOS Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-black/[0.06] transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-sm shadow-blue-500/30">
+          <i class="ph ph-squares-four text-xl font-bold"></i>
+        </div>
+        <div>
+          <h1 class="text-[15px] font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            Depo Adresleyici
+            <span class="text-[11px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200/50">Mikro ERP</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="copyTableToClipboard()" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-xs transition flex items-center gap-1.5 active:scale-95">
+          <i class="ph ph-copy text-sm"></i>
+          <span>Kopyala</span>
+        </button>
+        <button onclick="exportToExcel()" class="px-3.5 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-semibold shadow-sm shadow-blue-500/20 transition flex items-center gap-1.5 active:scale-95">
+          <i class="ph ph-download-simple text-sm font-bold"></i>
+          <span>Excel İndir</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- Sol Bölüm: Girdi & Ayarlar (4 Kolon) -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Liste Giriş Kartı -->
+      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-black/[0.04] flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="ph ph-text-align-left text-sm text-blue-500"></i> Ürün Listesi
+          </span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="loadLatestOrder()" class="text-[11px] text-blue-600 hover:text-blue-700 bg-blue-50/70 hover:bg-blue-100/70 px-2.5 py-1 rounded-full font-medium transition active:scale-95">
+              Son Listen
+            </button>
+            <button onclick="clearInput()" class="text-[11px] text-slate-400 hover:text-rose-500 p-1 rounded-md transition">
+              <i class="ph ph-trash text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <textarea id="orderInput" rows="12" class="w-full bg-[#F2F2F7]/70 hover:bg-[#F2F2F7] focus:bg-white text-slate-800 placeholder-slate-400 text-xs sm:text-[13px] leading-relaxed p-3.5 rounded-2xl border border-transparent focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition resize-y" placeholder="Ürünleri alt alta yapıştırın:
+Su böreği
+Çiğ köfte Sushi
+Kabak mücver
+Şakşuka
+Mercimek çorbası..."></textarea>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+          <span id="inputLineCount">0 satır girildi</span>
+          <span>Her satıra 1 ürün</span>
+        </div>
+      </div>
+
+      <!-- Ayarlar & Aksiyon Kartı -->
+      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-black/[0.04] flex flex-col gap-4">
+        
+        <div>
+          <label class="text-xs font-semibold text-slate-600 block mb-2">Listede Olmayan Ürünler</label>
+          <!-- iOS Segmented Control -->
+          <div class="bg-[#E5E5EA] p-1 rounded-2xl flex text-xs font-medium">
+            <button type="button" id="modeSeqBtn" onclick="setMode('sequential')" class="flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900 font-semibold">
+              B-001'den Sıralı
+            </button>
+            <button type="button" id="modeFixBtn" onclick="setMode('fixed')" class="flex-1 py-1.5 rounded-xl transition-all text-slate-600 hover:text-slate-900">
+              Tümü Sabit B-001
+            </button>
+          </div>
+          <input type="hidden" id="unselectedMode" value="sequential">
+        </div>
+
+        <!-- Ana Sıralama Butonu (iOS Pill Action) -->
+        <button onclick="processAddressing()" class="w-full py-3.5 px-4 rounded-2xl bg-[#007AFF] hover:bg-[#0071E3] active:scale-[0.98] text-white text-sm font-semibold shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2">
+          <i class="ph ph-lightning text-lg font-bold"></i>
+          <span>Adresleri Hesapla & Sırala</span>
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- Sağ Bölüm: Sonuçlar & Tablo (7 Kolon) -->
+    <div class="lg:col-span-7 flex flex-col gap-3">
+
+      <!-- iOS Style Stats Bar -->
+      <div class="bg-white rounded-2xl px-4 py-3 shadow-sm border border-black/[0.04] flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/50">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            A Grubu: <span id="statMatched" class="font-mono">0</span>
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200/50">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            B Grubu: <span id="statUnmatched" class="font-mono">108</span>
+          </span>
+        </div>
+
+        <!-- Filtre Sekmesi (Segmented) -->
+        <div class="bg-[#E5E5EA] p-0.5 rounded-xl flex text-[11px] font-medium">
+          <button onclick="setFilter('ALL')" id="filterBtnALL" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 font-semibold shadow-2xs">Tümü</button>
+          <button onclick="setFilter('A')" id="filterBtnA" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900">A Grubu</button>
+          <button onclick="setFilter('B')" id="filterBtnB" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900">B Grubu</button>
+        </div>
+      </div>
+
+      <!-- Tablo Kartı -->
+      <div class="bg-white rounded-3xl shadow-sm border border-black/[0.04] flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Tablo İçi Arama -->
+        <div class="p-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+          <div class="relative flex-1">
+            <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Stok adı, kodu veya yer koduna göre ara..." class="w-full bg-white border border-slate-200/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition">
+          </div>
+          <span class="text-[11px] text-slate-400 whitespace-nowrap" id="tableRowCount">108 kayıt</span>
+        </div>
+
+        <!-- Kaydırılabilir Liste Tablosu -->
+        <div class="flex-1 overflow-y-auto max-h-[580px]">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-50/80 text-slate-500 sticky top-0 z-10 font-semibold border-b border-slate-100 backdrop-blur-xs">
+              <tr>
+                <th class="py-2.5 px-3 text-center w-12 text-[11px] text-slate-400 font-medium">#</th>
+                <th class="py-2.5 px-3 text-center w-24">Yeni Adres</th>
+                <th class="py-2.5 px-3 w-28 font-mono text-slate-400">sto_kod</th>
+                <th class="py-2.5 px-3">Ürün Adı (sto_isim)</th>
+                <th class="py-2.5 px-3 text-center w-20 text-slate-400">Eski</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTableBody" class="divide-y divide-slate-100 text-slate-700">
+              <!-- JS Tablo satırlarını üretir -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- iOS Banner Toast -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur-md text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg border border-white/10 flex items-center gap-2 transform -translate-y-16 opacity-0 pointer-events-none transition-all duration-300">
+    <i id="toastIcon" class="ph ph-check-circle text-emerald-400 text-base"></i>
+    <span id="toastMsg">İşlem tamamlandı</span>
+  </div>
+
+  <script>
+    // 108 Master Database Items (Mikro ERP Stok Listesi)
+    const MASTER_DATA = [
+      { code: "4.1.1.25.0002", name: "VEGAN KÖFTE VE MAKARNA", oldLoc: "A-016" },
+      { code: "4.1.1.25.0003", name: "VEGAN MUSAKKA VE PİRİNÇ PİLAVI", oldLoc: "B-002" },
+      { code: "4.1.1.26.0001", name: "CALIFORNIA ONIGIRI", oldLoc: "B-003" },
+      { code: "4.1.1.26.0002", name: "TON BALIKLI ONİGİRİ", oldLoc: "B-004" },
+      { code: "4.1.1.26.0003", name: "DORITOS CALIFORNIA ONİGİRİ", oldLoc: "B-005" },
+      { code: "4.1.1.26.0004", name: "DORITOS TON BALIKLI ONİGİRİ", oldLoc: "B-006" },
+      { code: "4.1.2.1.0001", name: "HİNDİ FÜMELİ VE MOZZARELLALI OMLET & PATATES KAVURMA", oldLoc: "A-010" },
+      { code: "4.1.4.1.0002", name: "TAHİN PEKMEZLİ PANCAKE", oldLoc: "A-037" },
+      { code: "4.1.4.1.0003", name: "DAMLA ÇİKOLATALI PANCAKE", oldLoc: "B-009" },
+      { code: "4.2.1.5.0005", name: "HİNDİ FÜMELİ VE KAŞAR PEYNİRLİ SANDVİÇ", oldLoc: "B-010" },
+      { code: "4.2.1.5.0006", name: "KAŞAR PEYNİRLİ SALAMLISANDVİÇ", oldLoc: "B-011" },
+      { code: "4.2.1.5.0007", name: "KAŞAR PEYNİRLİ ZEYTİN EZMELİ SANDVİÇ", oldLoc: "A-028" },
+      { code: "4.2.1.5.0008", name: "BEYAZ PEYNİRLİ ZEYTİN EZMELİ SANDVİÇ", oldLoc: "A-027" },
+      { code: "4.2.1.5.0009", name: "TAM BUĞDAYLI HİNDİ FÜMELİ VE KAŞARLI SANDVİÇ", oldLoc: "B-014" },
+      { code: "4.2.1.5.0010", name: "3 PEYNİRLİ AVOKADOLU SANDVİÇ", oldLoc: "B-015" },
+      { code: "4.2.1.5.0011", name: "ÇITIR TAVUKLU SANDVİÇ", oldLoc: "A-029" },
+      { code: "4.2.1.5.0012", name: "SOSİSLİ SANDVİÇ", oldLoc: "B-017" },
+      { code: "4.2.1.5.0013", name: "4 PEYNİRLİ PESTO SOSLU TOST", oldLoc: "A-005" },
+      { code: "4.2.1.5.0014", name: "TAM BUĞDAYLI 3 PEYNİRLİ KURU DOMATESLİ TOST", oldLoc: "A-006" },
+      { code: "4.2.1.7.0003", name: "CHEDDAR PEYNİRLİ PANELİ TAVUK WRAP", oldLoc: "A-007" },
+      { code: "4.2.1.7.0006", name: "TAVUK DÖNER DÜRÜM", oldLoc: "B-021" },
+      { code: "4.2.1.7.0008", name: "ÇİĞ KÖFTE DÜRÜM", oldLoc: "A-013" },
+      { code: "4.2.1.8.0006", name: "VİYANA EKMEKLİ SANDVİÇ", oldLoc: "B-023" },
+      { code: "4.2.1.8.0007", name: "KORE SANDVİÇ", oldLoc: "B-024" },
+      { code: "4.2.1.8.0009", name: "KUMRU SANDVİÇ", oldLoc: "B-025" },
+      { code: "4.2.2.1.0001", name: "AVOKADOLU BAKLAGİL SALATASI", oldLoc: "B-026" },
+      { code: "4.2.2.3.0001", name: "ERİŞTELİ TAVUK SALATA", oldLoc: "B-027" },
+      { code: "4.2.2.3.0002", name: "TAVUKLU SEZAR SALATA", oldLoc: "A-023" },
+      { code: "4.2.2.3.0004", name: "AKDENİZ SALATA", oldLoc: "B-029" },
+      { code: "4.2.2.4.0001", name: "TON BALIKLI SALATA", oldLoc: "B-030" },
+      { code: "4.2.3.1.0001", name: "FALAFELLİ BOWL", oldLoc: "A-025" },
+      { code: "4.2.3.3.0001", name: "KURU CACIKLI TAVUKLU TABULE BOWL", oldLoc: "A-026" },
+      { code: "4.2.3.4.0001", name: "AVOKADOLU FÜME SOMON BOWL", oldLoc: "A-024" },
+      { code: "4.2.3.4.0002", name: "POKE CALIFORNIA BOWL", oldLoc: "B-034" },
+      { code: "4.2.4.5.0001", name: "AYRAN AŞI ÇORBASI", oldLoc: "B-035" },
+      { code: "4.2.4.5.0002", name: "MERCİMEK ÇORBASI", oldLoc: "A-031" },
+      { code: "4.2.4.5.0003", name: "IZGARA DOMATES ÇORBASI", oldLoc: "B-037" },
+      { code: "4.2.4.5.0010", name: "HİNDİ TANDIRLI İÇ PİLAV", oldLoc: "B-038" },
+      { code: "4.2.4.5.0016", name: "ŞEHRİYELİ TAVUK ÇORBASI", oldLoc: "B-039" },
+      { code: "4.2.4.5.0017", name: "EZOGELİN ÇORBASI", oldLoc: "A-032" },
+      { code: "4.2.5.1.0001", name: "YEŞİL SEBZELİ NOODLE", oldLoc: "A-014" },
+      { code: "4.2.5.1.0002", name: "MAC&CHEESE", oldLoc: "A-008" },
+      { code: "4.2.5.1.0003", name: "PENNE ARRABIATA", oldLoc: "A-015" },
+      { code: "4.2.5.2.0002", name: "LAZANYA", oldLoc: "B-044" },
+      { code: "4.2.5.3.0001", name: "TAVUKLU SEBZELİ NOODLE", oldLoc: "A-009" },
+      { code: "4.2.5.3.0002", name: "TAVUKLU FETTUCINE ALFREDO", oldLoc: "B-046" },
+      { code: "4.2.5.3.0003", name: "İTALYAN USULÜ TAVUK VE RİSOTTO", oldLoc: "B-047" },
+      { code: "4.2.8.4.0004", name: "EV KÖFTESİ", oldLoc: "B-048" },
+      { code: "4.2.8.4.0006", name: "BEĞENDİLİ KÖFTE", oldLoc: "B-049" },
+      { code: "4.2.8.4.0007", name: "KADINBUDU KÖFTE VE PATATES KAVURMA", oldLoc: "B-050" },
+      { code: "4.3.1.2.0001", name: "KURU PATLICAN DOLMA", oldLoc: "A-011" },
+      { code: "4.3.4.12.0005", name: "KURU FASULYE VE PİLAV", oldLoc: "B-052" },
+      { code: "4.3.4.12.0006", name: "İZMİR KÖFTE", oldLoc: "B-053" },
+      { code: "4.3.4.12.0007", name: "NOHUT VE PİRİNÇ PİLAVI", oldLoc: "A-003" },
+      { code: "4.3.4.12.0008", name: "BEZELYE VE PİRİNÇ PİLAVI", oldLoc: "B-055" },
+      { code: "4.3.4.2.0001", name: "IZGARA TAVUK ŞİŞ VE SİYEZ BULGURU", oldLoc: "A-012" },
+      { code: "4.3.4.2.0003", name: "KİNOALI TAVUK KÖFTESİ VE SEBZE SOTE", oldLoc: "A-004" },
+      { code: "4.3.4.2.0009", name: "BEĞENDİLİ TAVUK SOTE", oldLoc: "B-058" },
+      { code: "4.3.4.3.0001", name: "IZGARA TAVUK ETLİ BASMATİ PİRİNÇ PİLAVI", oldLoc: "A-001" },
+      { code: "4.3.4.3.0002", name: "TATLI EKŞİ SOSLU TAVUK SOTE VE ALFREDO SOSLU SPAGETTİ", oldLoc: "B-060" },
+      { code: "4.3.4.3.0003", name: "KÖRİ SOSLU TAVUK VE KESME PEYNİRLİ ERİŞTE", oldLoc: "B-061" },
+      { code: "4.3.4.3.0004", name: "KREMALI 3 MANTAR SOSLU TAVUKLU PANCARLI PENNE MAKARNA", oldLoc: "B-062" },
+      { code: "4.3.4.3.0006", name: "NOHUTLU PİLAV VE TAVUK", oldLoc: "A-018" },
+      { code: "4.3.4.3.0008", name: "HAŞLANMIŞ TAVUK GÖĞSÜ VE PİRİNÇ PİLAVI", oldLoc: "B-064" },
+      { code: "4.3.4.3.0009", name: "IZGARA TAVUK BUT VE PİRİNÇ PİLAVI", oldLoc: "A-017" },
+      { code: "4.3.4.3.0010", name: "PİLAV ÜSTÜ TAVUK DÖNER", oldLoc: "B-066" },
+      { code: "4.3.4.3.0012", name: "BALLI HARDALLI SUSAMLI TAVUK VE PİRİNÇ PİLAVI", oldLoc: "B-067" },
+      { code: "4.3.4.3.0014", name: "MARİNARA SOSLU TAVUK VE TEREYAĞLI MAKARNA", oldLoc: "B-068" },
+      { code: "4.3.4.3.0016", name: "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI", oldLoc: "B-069" },
+      { code: "4.3.4.8.0001", name: "HİNDİ ETLİ SİYEZ BULGUR PİLAVI", oldLoc: "B-070" },
+      { code: "4.3.4.8.0004", name: "HİNDİ KAVURMA VE ARPA ŞEHRİYELİ PİRİNÇ PİLAVI", oldLoc: "B-071" },
+      { code: "4.3.4.8.0005", name: "SOYA SOSLU KREMALI HİNDİ VE SPAGETTİ MAKARNA", oldLoc: "A-002" },
+      { code: "4.4.1.1.0002", name: "KABAK MÜCVER", oldLoc: "B-073" },
+      { code: "4.4.1.1.0004", name: "KİNOA KISIRI", oldLoc: "A-039" },
+      { code: "4.4.1.1.0005", name: "PIRASA MÜCVERİ", oldLoc: "A-037" },
+      { code: "4.4.1.1.0008", name: "MAKARNA SALATASI", oldLoc: "B-076" },
+      { code: "4.4.1.1.0018", name: "ACILI EZME", oldLoc: "B-077" },
+      { code: "4.4.1.1.0021", name: "HAYDARİ", oldLoc: "A-035" },
+      { code: "4.4.1.1.0022", name: "ŞAKŞUKA", oldLoc: "B-079" },
+      { code: "4.4.1.1.0025", name: "ZEYTİNYAĞLI YAPRAK SARMA", oldLoc: "A-022" },
+      { code: "4.4.1.1.0026", name: "ZEYTİNYAĞLI LAHANA SARMA", oldLoc: "A-021" },
+      { code: "4.4.1.1.0029", name: "ZEYTİNYAĞLI TAZE FASULYE", oldLoc: "B-082" },
+      { code: "4.4.1.1.0030", name: "KISIR", oldLoc: "A-019" },
+      { code: "4.4.1.1.0039", name: "ATOM", oldLoc: "B-084" },
+      { code: "4.4.1.1.0040", name: "RUS SALATASI", oldLoc: "A-033" },
+      { code: "4.4.1.1.0043", name: "ZEYTİNYAĞLI İMAMBAYILDI", oldLoc: "B-086" },
+      { code: "4.4.1.1.0046", name: "ZEYTİNYAĞLI PIRASA", oldLoc: "B-087" },
+      { code: "4.4.1.1.0048", name: "ÇİĞ KÖFTE PORSİYON", oldLoc: "A-038" },
+      { code: "4.4.1.1.0049", name: "ÇİĞ KÖFTE SUSHİ", oldLoc: "B-089" },
+      { code: "4.4.1.1.0050", name: "HAVUÇ TARATOR", oldLoc: "A-034" },
+      { code: "4.4.1.1.0056", name: "SU BÖREĞİ", oldLoc: "B-091" },
+      { code: "4.4.1.1.0057", name: "ZEYTİNYAĞLI BARBUNYA PİLAKİ 250 GR", oldLoc: "B-092" },
+      { code: "4.4.1.1.0059", name: "VİŞNELİ YAPRAK SARMA", oldLoc: "A-020" },
+      { code: "4.4.1.1.0064", name: "ZEYTİNYAĞLI BİBER DOLMA", oldLoc: "B-094" },
+      { code: "4.4.1.1.0065", name: "DORITOS DOLUTOS", oldLoc: "B-095" },
+      { code: "4.4.1.1.0066", name: "DORİTOS DİP SOS", oldLoc: "B-096" },
+      { code: "4.4.3.1.0001", name: "CALIFORNIA ROLL", oldLoc: "B-097" },
+      { code: "4.4.3.1.0007", name: "WHITE SALMON ROLL", oldLoc: "B-098" },
+      { code: "4.4.3.1.0016", name: "KYOTO MIX", oldLoc: "B-099" },
+      { code: "4.4.3.1.0017", name: "DORITOS CALIFORNIA ROLL", oldLoc: "B-100" },
+      { code: "4.4.4.1.0001", name: "İRMİK HELVASI", oldLoc: "A-036" },
+      { code: "4.4.6.1.0001", name: "LİMONATA 300 ML", oldLoc: "B-102" },
+      { code: "4.4.6.1.0004", name: "PORTAKAL SUYU 300 ML", oldLoc: "A-040" },
+      { code: "4.4.6.1.0010", name: "PORTAKAL SUYU 750 ML", oldLoc: "A-041" },
+      { code: "4.4.6.1.0026", name: "HIBISCUS ICE TEA 300 ML", oldLoc: "B-105" },
+      { code: "4.4.6.1.0027", name: "HIBISCUS ICE TEA 750 ML", oldLoc: "B-106" },
+      { code: "4.4.6.1.0034", name: "VİŞNE HOŞAFI", oldLoc: "A-030" },
+      { code: "4.4.6.1.0035", name: "KAYISI HOŞAFI", oldLoc: "B-108" }
+    ];
+
+    let currentResults = [];
+    let currentFilter = 'ALL';
+
+    // String normalization for Turkish fuzzy match
+    function normalizeTr(str) {
+      if (!str) return '';
+      return str
+        .toLowerCase()
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/[^a-z0-9]/g, '');
+    }
+
+    // Warehouse shorthand aliases
+    const SHORTCUTS = {
+      "ruzsal": "RUS SALATASI",
+      "haydarl": "HAYDARİ",
+      "zaksuka": "ŞAKŞUKA",
+      "hadtavgogsubasmati": "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI",
+      "hibduetlisiye": "HİNDİ ETLİ SİYEZ BULGUR PİLAVI",
+      "yaylacor": "AYRAN AŞI ÇORBASI",
+      "sehriyelicor": "ŞEHRİYELİ TAVUK ÇORBASI",
+      "mercimekcor": "MERCİMEK ÇORBASI",
+      "ezogelincor": "EZOGELİN ÇORBASI",
+      "dolutos": "DORITOS DOLUTOS",
+      "damlacikpankek": "DAMLA ÇİKOLATALI PANCAKE",
+      "korisoslutav": "KÖRİ SOSLU TAVUK VE KESME PEYNİRLİ ERİŞTE",
+      "nohutlutavpil": "NOHUTLU PİLAV VE TAVUK",
+      "tavsebzelinoodle": "TAVUKLU SEBZELİ NOODLE",
+      "lahanasarma": "ZEYTİNYAĞLI LAHANA SARMA",
+      "barbunyapilaki": "ZEYTİNYAĞLI BARBUNYA PİLAKİ 250 GR",
+      "cigkoftesushi": "ÇİĞ KÖFTE SUSHİ",
+      "begendilikofte": "BEĞENDİLİ KÖFTE",
+      "begendilitavuksote": "BEĞENDİLİ TAVUK SOTE",
+      "izgaratavsis": "IZGARA TAVUK ŞİŞ VE SİYEZ BULGURU",
+      "vegankoftemakarna": "VEGAN KÖFTE VE MAKARNA",
+      "maccheese": "MAC&CHEESE",
+      "macecheese": "MAC&CHEESE",
+      "izmirkofte": "İZMİR KÖFTE",
+      "tatlieksi": "TATLI EKŞİ SOSLU TAVUK SOTE VE ALFREDO SOSLU SPAGETTİ",
+      "kinoakisiri": "KİNOA KISIRI",
+      "hinditandir": "HİNDİ TANDIRLI İÇ PİLAV",
+      "tahinpekmezlipankek": "TAHİN PEKMEZLİ PANCAKE",
+      "tavsedat": "TAVUKLU SEZAR SALATA",
+      "falafelliborek": "FALAFELLİ BOWL",
+      "kurucaciklibiwl": "KURU CACIKLI TAVUKLU TABULE BOWL",
+      "kurucacikli": "KURU CACIKLI TAVUKLU TABULE BOWL"
+    };
+
+    function findBestMatch(queryText, masterList, usedCodes) {
+      const qNorm = normalizeTr(queryText);
+      if (!qNorm) return null;
+
+      // 1. Shorthand check
+      if (SHORTCUTS[qNorm]) {
+        const target = SHORTCUTS[qNorm];
+        const item = masterList.find(m => m.name === target && !usedCodes.has(m.code));
+        if (item) return item;
+      }
+
+      // 2. Exact match
+      for (const item of masterList) {
+        if (usedCodes.has(item.code)) continue;
+        if (normalizeTr(item.name) === qNorm) return item;
+      }
+
+      // 3. Inclusion match
+      for (const item of masterList) {
+        if (usedCodes.has(item.code)) continue;
+        const iNorm = normalizeTr(item.name);
+        if (iNorm.includes(qNorm) || qNorm.includes(iNorm)) {
+          return item;
+        }
+      }
+
+      // 4. Token keyword matching
+      const qTokens = queryText.toLowerCase().replace(/[^a-z0-9ğüşıöç ]/g, ' ').split(/\s+/).filter(t => t.length > 2);
+      let bestItem = null;
+      let maxScore = 0;
+
+      for (const item of masterList) {
+        if (usedCodes.has(item.code)) continue;
+        const iNameLower = item.name.toLowerCase();
+        let score = 0;
+        for (const token of qTokens) {
+          if (iNameLower.includes(token)) score++;
+        }
+        if (score > maxScore && score >= Math.min(2, qTokens.length)) {
+          maxScore = score;
+          bestItem = item;
+        }
+      }
+
+      return bestItem;
+    }
+
+    function setMode(mode) {
+      document.getElementById('unselectedMode').value = mode;
+      const seqBtn = document.getElementById('modeSeqBtn');
+      const fixBtn = document.getElementById('modeFixBtn');
+
+      if (mode === 'sequential') {
+        seqBtn.className = "flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900 font-semibold";
+        fixBtn.className = "flex-1 py-1.5 rounded-xl transition-all text-slate-600 hover:text-slate-900";
+      } else {
+        fixBtn.className = "flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900 font-semibold";
+        seqBtn.className = "flex-1 py-1.5 rounded-xl transition-all text-slate-600 hover:text-slate-900";
+      }
+    }
+
+    function processAddressing() {
+      const rawInput = document.getElementById('orderInput').value.trim();
+      if (!rawInput) {
+        showToast('Lütfen önce sıralanacak ürün listesini yapıştırın', 'warning');
+        return;
+      }
+
+      const lines = rawInput.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const unselectedMode = document.getElementById('unselectedMode').value;
+
+      const usedCodes = new Set();
+      const matchedA = [];
+      const notFoundQueries = [];
+
+      lines.forEach((query) => {
+        const match = findBestMatch(query, MASTER_DATA, usedCodes);
+        if (match) {
+          usedCodes.add(match.code);
+          matchedA.push({
+            query: query,
+            code: match.code,
+            name: match.name,
+            oldLoc: match.oldLoc,
+            group: 'A'
+          });
+        } else {
+          notFoundQueries.push(query);
+        }
+      });
+
+      // A-001, A-002...
+      matchedA.forEach((item, idx) => {
+        const num = 1 + idx;
+        item.newLoc = `A-${String(num).padStart(3, '0')}`;
+        item.sira = idx + 1;
+      });
+
+      // Unselected items (B Group)
+      const unselected = MASTER_DATA.filter(item => !usedCodes.has(item.code));
+      let bCounter = 1;
+
+      const formattedB = unselected.map((item, idx) => {
+        let newLoc = 'B-001';
+        if (unselectedMode === 'sequential') {
+          newLoc = `B-${String(bCounter).padStart(3, '0')}`;
+          bCounter++;
+        }
+        return {
+          sira: matchedA.length + idx + 1,
+          newLoc: newLoc,
+          code: item.code,
+          name: item.name,
+          oldLoc: item.oldLoc,
+          group: 'B'
+        };
+      });
+
+      currentResults = [...matchedA, ...formattedB];
+
+      document.getElementById('statMatched').textContent = matchedA.length;
+      document.getElementById('statUnmatched').textContent = formattedB.length;
+
+      renderTable();
+      showToast(`${matchedA.length} ürün A grubuna adreslendi`, 'success');
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('resultsTableBody');
+      const searchTerm = normalizeTr(document.getElementById('tableSearch').value || '');
+      tbody.innerHTML = '';
+
+      const filtered = currentResults.filter(item => {
+        if (currentFilter !== 'ALL' && item.group !== currentFilter) return false;
+        if (searchTerm) {
+          const hay = normalizeTr(item.code + item.name + item.newLoc + item.oldLoc);
+          return hay.includes(searchTerm);
+        }
+        return true;
+      });
+
+      document.getElementById('tableRowCount').textContent = `${filtered.length} kayıt`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-12 text-center text-slate-400">
+              <i class="ph ph-magnifying-glass text-3xl mb-1 text-slate-300 block"></i>
+              Eşleşen ürün bulunamadı
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      filtered.forEach((row) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/70 transition-colors border-b border-slate-100";
+
+        const isA = row.group === 'A';
+        const locBadge = isA
+          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg font-mono font-semibold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200/60">${row.newLoc}</span>`
+          : `<span class="inline-flex items-center px-2 py-0.5 rounded-lg font-mono font-semibold text-xs bg-amber-50 text-amber-700 border border-amber-200/60">${row.newLoc}</span>`;
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${row.sira}</td>
+          <td class="py-2.5 px-3 text-center">${locBadge}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-400 text-[11px]">${row.code}</td>
+          <td class="py-2.5 px-3 font-medium text-slate-800">
+            ${row.name}
+            ${row.query && row.query !== row.name ? `<span class="text-[10px] block text-slate-400 font-normal">Aranan: ${row.query}</span>` : ''}
+          </td>
+          <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${row.oldLoc}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['ALL', 'A', 'B'].forEach(f => {
+        const btn = document.getElementById(`filterBtn${f}`);
+        if (f === filter) {
+          btn.className = "px-2.5 py-1 rounded-lg bg-white text-slate-900 font-semibold shadow-2xs";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900";
+        }
+      });
+      renderTable();
+    }
+
+    function filterTable() {
+      renderTable();
+    }
+
+    function clearInput() {
+      document.getElementById('orderInput').value = '';
+      updateLineCount();
+    }
+
+    function updateLineCount() {
+      const text = document.getElementById('orderInput').value.trim();
+      const count = text ? text.split('\n').filter(l => l.trim().length > 0).length : 0;
+      document.getElementById('inputLineCount').textContent = `${count} satır girildi`;
+    }
+
+    document.getElementById('orderInput').addEventListener('input', updateLineCount);
+
+    function loadLatestOrder() {
+      document.getElementById('orderInput').value = `Su böreği 
+Çiğ köfte Sushi
+Kabak mücver 
+Acılı ezme 
+Ruz sal
+Haydarl 
+Barbunya pilaki
+Lahana sarma
+Şehriyeli cor
+Mercimek cor
+Ezogelin cor
+Yayla cor
+Havuç tarator 
+Zaksuka 
+Begendili köfte 
+Yeşil sebzeli noodle
+Tav sebzeli noodle
+Had tav göğsü basmati 
+Nohutlu tav pil
+Viyana sandviç 
+Kore sandviç 
+Izgara tav şiş
+Vegan köfte makarna 
+Hibdu etli siye
+Begendili tavuk sote
+Mac cheese 
+Izmir köfte 
+Ev köftesi 
+Tatlı ekşi 
+Kinoa kisiri 
+Hindi tandır 
+Avokadolu fume somon bowl
+Tahin pekmezli pankek
+Damla cik pankek
+Köri soslu tav
+Dolutos`;
+      updateLineCount();
+      processAddressing();
+    }
+
+    function exportToExcel() {
+      if (currentResults.length === 0) {
+        showToast('Dışa aktarmak için önce bir liste oluşturun', 'warning');
+        return;
+      }
+
+      const excelData = currentResults.map(item => ({
+        "Sıra No": item.sira,
+        "Yeni Adres (sto_yer_kod)": item.newLoc,
+        "Stok Kodu (sto_kod)": item.code,
+        "Stok İsmi (sto_isim)": item.name,
+        "Eski Adres": item.oldLoc,
+        "Grup": item.group === 'A' ? 'A Grubu (Seçilen)' : 'B Grubu (Diğer)'
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      ws['!cols'] = [
+        { wch: 8 },
+        { wch: 24 },
+        { wch: 18 },
+        { wch: 50 },
+        { wch: 14 },
+        { wch: 20 }
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Depo_Adresleri");
+      XLSX.writeFile(wb, `Depo_Raf_Adresleri_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      showToast('Excel dosyası indirildi', 'success');
+    }
+
+    function copyTableToClipboard() {
+      if (currentResults.length === 0) {
+        showToast('Kopyalanacak veri yok', 'warning');
+        return;
+      }
+
+      let tsv = "Sıra\tYeni Adres\tStok Kodu\tStok İsmi\tEski Adres\n";
+      currentResults.forEach(r => {
+        tsv += `${r.sira}\t${r.newLoc}\t${r.code}\t${r.name}\t${r.oldLoc}\n`;
+      });
+
+      const tempArea = document.createElement('textarea');
+      tempArea.value = tsv;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Tablo kopyalandı, Excel\'e yapıştırabilirsiniz', 'success');
+      } catch (err) {
+        showToast('Kopyalama yapılamadı', 'warning');
+      }
+      document.body.removeChild(tempArea);
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      if (type === 'warning') {
+        toastIcon.className = "ph ph-warning-circle text-amber-400 text-base";
+      } else {
+        toastIcon.className = "ph ph-check-circle text-emerald-400 text-base";
+      }
+
+      toast.classList.remove('-translate-y-16', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('-translate-y-16', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2800);
+    }
+
+    window.onload = function() {
+      loadLatestOrder();
+    };
+  </script>
+</body>
+</html>
