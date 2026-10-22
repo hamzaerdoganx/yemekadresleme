@@ -1,114 +1,202 @@
 <!DOCTYPE html>
-<html lang="tr" class="h-full bg-slate-50">
+<html lang="tr" class="h-full bg-[#F2F2F7]">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Depo Adres Dağıtım Sistemi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Depo Adresleyici Pro - Mikro ERP</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- SheetJS for Excel generation -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- Phosphor Icons for iOS-like rounded glyphs -->
+  <!-- Phosphor Icons for iOS-like glyphs -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
     .font-mono-code { font-family: 'JetBrains Mono', monospace; }
-    /* iOS style scrollbar */
+    
+    /* iOS Custom Scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: #D1D1D6;
       border-radius: 9999px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: #8E8E93;
     }
+
+    /* Print Styles for A4 Warehouse Handout */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      header, .no-print, #leftPanel, #toast, .action-buttons {
+        display: none !important;
+      }
+      main {
+        display: block !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      #rightPanel {
+        width: 100% !important;
+      }
+      .printable-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      .print-header {
+        display: block !important;
+      }
+      table {
+        font-size: 10pt !important;
+        width: 100% !important;
+      }
+      th, td {
+        padding: 4px 6px !important;
+        border-bottom: 1px solid #ddd !important;
+      }
+    }
+    .print-header { display: none; }
   </style>
 </head>
-<body class="min-h-full flex flex-col bg-[#F2F2F7] text-slate-850">
+<body class="min-h-full flex flex-col bg-[#F2F2F7] text-slate-900 select-none sm:select-auto">
 
-  <!-- iOS Navigation Bar -->
-  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-black/[0.06] transition-all">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+  <!-- iOS Top Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-black/[0.08] transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      
+      <!-- Brand & Status -->
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-sm shadow-blue-500/30">
-          <i class="ph ph-squares-four text-xl font-bold"></i>
+        <div class="w-10 h-10 rounded-[14px] bg-[#007AFF] text-white flex items-center justify-center shadow-md shadow-blue-500/25">
+          <i class="ph ph-cube text-xl font-bold"></i>
         </div>
         <div>
-          <h1 class="text-[15px] font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            Depo Adresleyici
-            <span class="text-[11px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200/50">Mikro ERP</span>
-          </h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-[16px] font-bold text-slate-900 tracking-tight leading-tight">Depo Adres Dağıtıcı</h1>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-200/60">v2.5 Pro</span>
+          </div>
+          <p class="text-[11px] text-slate-500 font-medium">108 Stok Kartı • Mikro ERP Raf Entegratörü</p>
         </div>
       </div>
 
-      <!-- Quick Action Buttons -->
-      <div class="flex items-center gap-2">
-        <button onclick="copyTableToClipboard()" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-xs transition flex items-center gap-1.5 active:scale-95">
-          <i class="ph ph-copy text-sm"></i>
-          <span>Kopyala</span>
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 no-print">
+        <button onclick="printOrderSheet()" title="Yazdır veya PDF Kaydet" class="hidden sm:inline-flex px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-2xs transition items-center gap-1.5 active:scale-95">
+          <i class="ph ph-printer text-sm"></i>
+          <span>Yazdır</span>
         </button>
-        <button onclick="exportToExcel()" class="px-3.5 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-semibold shadow-sm shadow-blue-500/20 transition flex items-center gap-1.5 active:scale-95">
-          <i class="ph ph-download-simple text-sm font-bold"></i>
-          <span>Excel İndir</span>
+
+        <button onclick="copyTableToClipboard()" title="Panoya Kopyala" class="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-2xs transition flex items-center gap-1.5 active:scale-95">
+          <i class="ph ph-copy-simple text-sm"></i>
+          <span class="hidden sm:inline">Kopyala</span>
         </button>
+
+        <!-- Dropdown / Action for Excel -->
+        <div class="relative inline-block text-left">
+          <button onclick="exportToExcel()" class="px-3.5 py-2 rounded-xl bg-[#007AFF] hover:bg-[#0071E3] text-white text-xs font-semibold shadow-sm shadow-blue-500/30 transition flex items-center gap-1.5 active:scale-95">
+            <i class="ph ph-file-arrow-down text-base font-bold"></i>
+            <span>Excel İndir</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
+  <!-- Print Sheet Title (Only visible in Print) -->
+  <div class="print-header p-6 pb-2">
+    <div class="flex justify-between items-center border-b pb-3 mb-3">
+      <div>
+        <h2 class="text-xl font-bold">DEPO RAF TOPLAMA VE ADRES LİSTESİ</h2>
+        <p class="text-xs text-gray-500">Mikro ERP Stok Depo Yer Kodları Güncelleme Formu</p>
+      </div>
+      <div class="text-right text-xs text-gray-600">
+        <p>Tarih: <span id="printDate"></span></p>
+        <p>Toplam Ürün: <span id="printTotal"></span></p>
+      </div>
+    </div>
+  </div>
+
   <!-- Main View -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-    <!-- Sol Bölüm: Girdi & Ayarlar (4 Kolon) -->
-    <div class="lg:col-span-5 flex flex-col gap-4">
+    <!-- Sol Bölüm: Girdi & Ayarlar (lg: 5 Kolon) -->
+    <div id="leftPanel" class="lg:col-span-5 flex flex-col gap-4">
 
-      <!-- Liste Giriş Kartı -->
-      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-black/[0.04] flex flex-col gap-3">
+      <!-- Ürün Listesi Giriş Kartı -->
+      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-black/[0.04] flex flex-col gap-3">
+        
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <i class="ph ph-text-align-left text-sm text-blue-500"></i> Ürün Listesi
-          </span>
           <div class="flex items-center gap-1.5">
-            <button onclick="loadLatestOrder()" class="text-[11px] text-blue-600 hover:text-blue-700 bg-blue-50/70 hover:bg-blue-100/70 px-2.5 py-1 rounded-full font-medium transition active:scale-95">
-              Son Listen
-            </button>
-            <button onclick="clearInput()" class="text-[11px] text-slate-400 hover:text-rose-500 p-1 rounded-md transition">
+            <i class="ph ph-list-numbers text-base text-blue-500 font-bold"></i>
+            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Toplanacak Ürün Listesi</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="clearInput()" title="Temizle" class="text-xs text-slate-400 hover:text-rose-500 p-1 rounded-lg transition active:scale-90">
               <i class="ph ph-trash text-sm"></i>
             </button>
           </div>
         </div>
 
-        <textarea id="orderInput" rows="12" class="w-full bg-[#F2F2F7]/70 hover:bg-[#F2F2F7] focus:bg-white text-slate-800 placeholder-slate-400 text-xs sm:text-[13px] leading-relaxed p-3.5 rounded-2xl border border-transparent focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition resize-y" placeholder="Ürünleri alt alta yapıştırın:
+        <!-- Hızlı Şablon Hapları -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+          <span class="text-slate-400 font-medium text-[10px] whitespace-nowrap">Hızlı Yükle:</span>
+          <button onclick="loadSample(1)" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-600 font-medium whitespace-nowrap transition active:scale-95">
+            Örnek (36 Ürün)
+          </button>
+          <button onclick="loadSample(2)" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-600 font-medium whitespace-nowrap transition active:scale-95">
+            Sandviç & Sushi (19)
+          </button>
+          <button onclick="loadSample(3)" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-600 font-medium whitespace-nowrap transition active:scale-95">
+            Çorba & Börek (25)
+          </button>
+        </div>
+
+        <div class="relative">
+          <textarea id="orderInput" rows="11" class="w-full bg-[#F2F2F7]/70 hover:bg-[#F2F2F7] focus:bg-white text-slate-800 placeholder-slate-400 text-xs sm:text-[13px] leading-relaxed p-3.5 rounded-2xl border border-transparent focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition resize-y font-mono-code" placeholder="Sırayla ürün adlarını alt alta yapıştırın:
 Su böreği
 Çiğ köfte Sushi
 Kabak mücver
-Şakşuka
-Mercimek çorbası..."></textarea>
+Acılı ezme
+Rus salatası..."></textarea>
+        </div>
 
-        <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
-          <span id="inputLineCount">0 satır girildi</span>
-          <span>Her satıra 1 ürün</span>
+        <div class="flex items-center justify-between text-[11px] text-slate-400 px-1 font-medium">
+          <span id="inputLineCount">0 ürün girildi</span>
+          <span>A-001'den başlayıp sıralanır</span>
         </div>
       </div>
 
       <!-- Ayarlar & Aksiyon Kartı -->
-      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-black/[0.04] flex flex-col gap-4">
+      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-black/[0.04] flex flex-col gap-4">
         
         <div>
-          <label class="text-xs font-semibold text-slate-600 block mb-2">Listede Olmayan Ürünler</label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="ph ph-sliders-horizontal text-blue-500"></i> Listede Olmayan Ürünler (B Grubu)
+            </label>
+            <span class="text-[10px] text-slate-400 font-mono" id="bGroupCountLabel">72 ürün</span>
+          </div>
+
           <!-- iOS Segmented Control -->
-          <div class="bg-[#E5E5EA] p-1 rounded-2xl flex text-xs font-medium">
-            <button type="button" id="modeSeqBtn" onclick="setMode('sequential')" class="flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900 font-semibold">
+          <div class="bg-[#E5E5EA] p-1 rounded-2xl flex text-xs font-semibold">
+            <button type="button" id="modeSeqBtn" onclick="setMode('sequential')" class="flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900">
               B-001'den Sıralı
             </button>
             <button type="button" id="modeFixBtn" onclick="setMode('fixed')" class="flex-1 py-1.5 rounded-xl transition-all text-slate-600 hover:text-slate-900">
@@ -118,68 +206,110 @@ Mercimek çorbası..."></textarea>
           <input type="hidden" id="unselectedMode" value="sequential">
         </div>
 
-        <!-- Ana Sıralama Butonu (iOS Pill Action) -->
-        <button onclick="processAddressing()" class="w-full py-3.5 px-4 rounded-2xl bg-[#007AFF] hover:bg-[#0071E3] active:scale-[0.98] text-white text-sm font-semibold shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2">
+        <!-- Ana Sıralama Butonu (iOS Blue Pill) -->
+        <button onclick="processAddressing()" class="w-full py-3.5 px-4 rounded-2xl bg-[#007AFF] hover:bg-[#0071E3] active:scale-[0.98] text-white text-sm font-bold shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2">
           <i class="ph ph-lightning text-lg font-bold"></i>
           <span>Adresleri Hesapla & Sırala</span>
         </button>
 
       </div>
 
+      <!-- Eşleşmeyen / Uyarı Kartı (Gerektiğinde görünür) -->
+      <div id="unmatchedAlertCard" class="hidden bg-rose-50 border border-rose-200/80 rounded-3xl p-4 text-xs text-rose-800 flex flex-col gap-2 transition-all">
+        <div class="flex items-center gap-2 font-bold text-rose-900">
+          <i class="ph ph-warning-circle text-base"></i>
+          <span id="unmatchedCountText">0 ürün eşleştirilemedi</span>
+        </div>
+        <p class="text-[11px] text-rose-700 leading-normal">Aşağıdaki satırlar veritabanındaki 108 ürünle eşleşmedi. Yazımı kontrol edebilirsiniz:</p>
+        <ul id="unmatchedList" class="font-mono text-[11px] bg-white/70 rounded-xl p-2.5 divide-y divide-rose-100 max-h-28 overflow-y-auto"></ul>
+      </div>
+
     </div>
 
-    <!-- Sağ Bölüm: Sonuçlar & Tablo (7 Kolon) -->
-    <div class="lg:col-span-7 flex flex-col gap-3">
+    <!-- Sağ Bölüm: Sonuçlar & Tablo (lg: 7 Kolon) -->
+    <div id="rightPanel" class="lg:col-span-7 flex flex-col gap-3">
 
-      <!-- iOS Style Stats Bar -->
-      <div class="bg-white rounded-2xl px-4 py-3 shadow-sm border border-black/[0.04] flex items-center justify-between gap-3 text-xs">
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/50">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            A Grubu: <span id="statMatched" class="font-mono">0</span>
+      <!-- iOS Widget Tarzı Mini İstatistikler -->
+      <div class="grid grid-cols-3 gap-3">
+        <!-- A Grubu -->
+        <div class="bg-white rounded-2xl p-3 shadow-xs border border-black/[0.04] flex flex-col">
+          <span class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> A Grubu
           </span>
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200/50">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            B Grubu: <span id="statUnmatched" class="font-mono">108</span>
-          </span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span id="statMatched" class="text-xl sm:text-2xl font-bold font-mono text-slate-800">0</span>
+            <span class="text-[10px] text-slate-400">Öncelikli Raf</span>
+          </div>
         </div>
 
-        <!-- Filtre Sekmesi (Segmented) -->
-        <div class="bg-[#E5E5EA] p-0.5 rounded-xl flex text-[11px] font-medium">
-          <button onclick="setFilter('ALL')" id="filterBtnALL" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 font-semibold shadow-2xs">Tümü</button>
-          <button onclick="setFilter('A')" id="filterBtnA" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900">A Grubu</button>
-          <button onclick="setFilter('B')" id="filterBtnB" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900">B Grubu</button>
+        <!-- B Grubu -->
+        <div class="bg-white rounded-2xl p-3 shadow-xs border border-black/[0.04] flex flex-col">
+          <span class="text-[11px] font-semibold text-amber-600 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> B Grubu
+          </span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span id="statUnmatched" class="text-xl sm:text-2xl font-bold font-mono text-slate-800">108</span>
+            <span class="text-[10px] text-slate-400">Atıl / Diğer</span>
+          </div>
+        </div>
+
+        <!-- Toplam Stok -->
+        <div class="bg-white rounded-2xl p-3 shadow-xs border border-black/[0.04] flex flex-col">
+          <span class="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+            <i class="ph ph-database text-xs"></i> Toplam Havuz
+          </span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-xl sm:text-2xl font-bold font-mono text-slate-800">108</span>
+            <span class="text-[10px] text-emerald-600 font-medium" id="statMatchPercent">%0 aktif</span>
+          </div>
         </div>
       </div>
 
       <!-- Tablo Kartı -->
-      <div class="bg-white rounded-3xl shadow-sm border border-black/[0.04] flex-1 flex flex-col overflow-hidden">
+      <div class="printable-card bg-white rounded-3xl shadow-xs border border-black/[0.04] flex-1 flex flex-col overflow-hidden">
         
-        <!-- Tablo İçi Arama -->
-        <div class="p-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-          <div class="relative flex-1">
+        <!-- Tablo Araç Çubuğu -->
+        <div class="p-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/60 no-print">
+          
+          <!-- Arama Kutusu -->
+          <div class="relative flex-1 min-w-[200px]">
             <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
-            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Stok adı, kodu veya yer koduna göre ara..." class="w-full bg-white border border-slate-200/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition">
+            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Stok kodu, adı veya raf ara..." class="w-full bg-white border border-slate-200/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition">
           </div>
-          <span class="text-[11px] text-slate-400 whitespace-nowrap" id="tableRowCount">108 kayıt</span>
+
+          <!-- Filtre Segmenti -->
+          <div class="bg-[#E5E5EA] p-0.5 rounded-xl flex text-[11px] font-semibold">
+            <button onclick="setFilter('ALL')" id="filterBtnALL" class="px-3 py-1 rounded-lg bg-white text-slate-900 shadow-2xs">Tümü</button>
+            <button onclick="setFilter('A')" id="filterBtnA" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">A Grubu</button>
+            <button onclick="setFilter('B')" id="filterBtnB" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900">B Grubu</button>
+          </div>
+
+          <span class="text-[11px] text-slate-400 whitespace-nowrap font-medium" id="tableRowCount">108 kayıt</span>
         </div>
 
-        <!-- Kaydırılabilir Liste Tablosu -->
-        <div class="flex-1 overflow-y-auto max-h-[580px]">
+        <!-- Kaydırılabilir Tablo -->
+        <div class="flex-1 overflow-y-auto max-h-[620px] relative">
           <table class="w-full text-left border-collapse text-xs">
-            <thead class="bg-slate-50/80 text-slate-500 sticky top-0 z-10 font-semibold border-b border-slate-100 backdrop-blur-xs">
+            <thead class="bg-slate-50/90 text-slate-500 sticky top-0 z-10 font-bold border-b border-slate-200/60 backdrop-blur-xs">
               <tr>
-                <th class="py-2.5 px-3 text-center w-12 text-[11px] text-slate-400 font-medium">#</th>
-                <th class="py-2.5 px-3 text-center w-24">Yeni Adres</th>
-                <th class="py-2.5 px-3 w-28 font-mono text-slate-400">sto_kod</th>
-                <th class="py-2.5 px-3">Ürün Adı (sto_isim)</th>
-                <th class="py-2.5 px-3 text-center w-20 text-slate-400">Eski</th>
+                <th class="py-2.5 px-3 text-center w-12 text-[11px] text-slate-400">#</th>
+                <th class="py-2.5 px-3 text-center w-24">Yeni Yer Kodu</th>
+                <th class="py-2.5 px-3 w-32 font-mono text-slate-400">sto_kod</th>
+                <th class="py-2.5 px-3">sto_isim (Stok Adı)</th>
+                <th class="py-2.5 px-3 text-center w-16 text-slate-400">Eski</th>
+                <th class="py-2.5 px-2 text-center w-16 no-print">Sıra Değiş</th>
               </tr>
             </thead>
             <tbody id="resultsTableBody" class="divide-y divide-slate-100 text-slate-700">
-              <!-- JS Tablo satırlarını üretir -->
+              <!-- JS dinamik doldurur -->
             </tbody>
           </table>
+        </div>
+
+        <!-- Tablo Alt Bilgi Çubuğu -->
+        <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 no-print">
+          <span>A Grubu ürünleri tablodaki oklarla yukarı/aşağı taşıyabilirsiniz.</span>
+          <span class="font-mono text-slate-500">Mikro v16/v17 Uyumlu</span>
         </div>
 
       </div>
@@ -188,20 +318,20 @@ Mercimek çorbası..."></textarea>
 
   </main>
 
-  <!-- iOS Banner Toast -->
-  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur-md text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg border border-white/10 flex items-center gap-2 transform -translate-y-16 opacity-0 pointer-events-none transition-all duration-300">
+  <!-- iOS Dynamic Capsule Toast -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl border border-white/10 flex items-center gap-2 transform -translate-y-20 opacity-0 pointer-events-none transition-all duration-300">
     <i id="toastIcon" class="ph ph-check-circle text-emerald-400 text-base"></i>
-    <span id="toastMsg">İşlem tamamlandı</span>
+    <span id="toastMsg">İşlem başarıyla yapıldı</span>
   </div>
 
   <script>
-    // 108 Master Database Items (Mikro ERP Stok Listesi)
+    // 108 Master Database Items (Mikro ERP Veritabanı)
     const MASTER_DATA = [
       { code: "4.1.1.25.0002", name: "VEGAN KÖFTE VE MAKARNA", oldLoc: "A-016" },
       { code: "4.1.1.25.0003", name: "VEGAN MUSAKKA VE PİRİNÇ PİLAVI", oldLoc: "B-002" },
       { code: "4.1.1.26.0001", name: "CALIFORNIA ONIGIRI", oldLoc: "B-003" },
       { code: "4.1.1.26.0002", name: "TON BALIKLI ONİGİRİ", oldLoc: "B-004" },
-      { code: "4.1.1.26.0003", name: "DORITOS CALIFORNIA ONİGİRİ", oldLoc: "B-005" },
+      { code: "4.1.1.26.0003", "name": "DORITOS CALIFORNIA ONİGİRİ", oldLoc: "B-005" },
       { code: "4.1.1.26.0004", name: "DORITOS TON BALIKLI ONİGİRİ", oldLoc: "B-006" },
       { code: "4.1.2.1.0001", name: "HİNDİ FÜMELİ VE MOZZARELLALI OMLET & PATATES KAVURMA", oldLoc: "A-010" },
       { code: "4.1.4.1.0002", name: "TAHİN PEKMEZLİ PANCAKE", oldLoc: "A-037" },
@@ -268,7 +398,7 @@ Mercimek çorbası..."></textarea>
       { code: "4.3.4.3.0016", name: "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI", oldLoc: "B-069" },
       { code: "4.3.4.8.0001", name: "HİNDİ ETLİ SİYEZ BULGUR PİLAVI", oldLoc: "B-070" },
       { code: "4.3.4.8.0004", name: "HİNDİ KAVURMA VE ARPA ŞEHRİYELİ PİRİNÇ PİLAVI", oldLoc: "B-071" },
-      { code: "4.3.4.8.0005", name: "SOYA SOSLU KREMALI HİNDİ VE SPAGETTİ MAKARNA", oldLoc: "A-002" },
+      { code: "4.3.4.8.0005", name: "SOYA SOSLU KREMALI HİNDİ VE SPAGETTİ MAKARNA", "oldLoc": "A-002" },
       { code: "4.4.1.1.0002", name: "KABAK MÜCVER", oldLoc: "B-073" },
       { code: "4.4.1.1.0004", name: "KİNOA KISIRI", oldLoc: "A-039" },
       { code: "4.4.1.1.0005", name: "PIRASA MÜCVERİ", oldLoc: "A-037" },
@@ -307,10 +437,82 @@ Mercimek çorbası..."></textarea>
       { code: "4.4.6.1.0035", name: "KAYISI HOŞAFI", oldLoc: "B-108" }
     ];
 
+    // State Variables
     let currentResults = [];
+    let matchedAItems = [];
+    let unselectedBItems = [];
     let currentFilter = 'ALL';
 
-    // String normalization for Turkish fuzzy match
+    // Comprehensive Aliases & Shorthands used in warehouse operations
+    const SHORTCUTS = {
+      "ruzsal": "RUS SALATASI",
+      "haydarl": "HAYDARİ",
+      "zaksuka": "ŞAKŞUKA",
+      "hadtavgogsubasmati": "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI",
+      "hadtav": "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI",
+      "hibduetlisiye": "HİNDİ ETLİ SİYEZ BULGUR PİLAVI",
+      "yaylacor": "AYRAN AŞI ÇORBASI",
+      "sehriyelicor": "ŞEHRİYELİ TAVUK ÇORBASI",
+      "mercimekcor": "MERCİMEK ÇORBASI",
+      "ezogelincor": "EZOGELİN ÇORBASI",
+      "dolutos": "DORITOS DOLUTOS",
+      "damlacikpankek": "DAMLA ÇİKOLATALI PANCAKE",
+      "korisoslutav": "KÖRİ SOSLU TAVUK VE KESME PEYNİRLİ ERİŞTE",
+      "nohutlutavpil": "NOHUTLU PİLAV VE TAVUK",
+      "tavsebzelinoodle": "TAVUKLU SEBZELİ NOODLE",
+      "tavnoodle": "TAVUKLU SEBZELİ NOODLE",
+      "lahanasarma": "ZEYTİNYAĞLI LAHANA SARMA",
+      "barbunyapilaki": "ZEYTİNYAĞLI BARBUNYA PİLAKİ 250 GR",
+      "barbunya": "ZEYTİNYAĞLI BARBUNYA PİLAKİ 250 GR",
+      "cigkoftesushi": "ÇİĞ KÖFTE SUSHİ",
+      "cigkoftesusi": "ÇİĞ KÖFTE SUSHİ",
+      "cigkoftepors": "ÇİĞ KÖFTE PORSİYON",
+      "begendilikofte": "BEĞENDİLİ KÖFTE",
+      "begendilitavuksote": "BEĞENDİLİ TAVUK SOTE",
+      "izgaratavsis": "IZGARA TAVUK ŞİŞ VE SİYEZ BULGURU",
+      "izgaratavveve": "IZGARA TAVUK ŞİŞ VE SİYEZ BULGURU",
+      "vegankoftemakarna": "VEGAN KÖFTE VE MAKARNA",
+      "maccheese": "MAC&CHEESE",
+      "macecheese": "MAC&CHEESE",
+      "izmirkofte": "İZMİR KÖFTE",
+      "tatlieksi": "TATLI EKŞİ SOSLU TAVUK SOTE VE ALFREDO SOSLU SPAGETTİ",
+      "kinoakisiri": "KİNOA KISIRI",
+      "kinoakisir": "KİNOA KISIRI",
+      "hinditandir": "HİNDİ TANDIRLI İÇ PİLAV",
+      "hinditandirpilav": "HİNDİ TANDIRLI İÇ PİLAV",
+      "tahinpekmezlipankek": "TAHİN PEKMEZLİ PANCAKE",
+      "tavsedat": "TAVUKLU SEZAR SALATA",
+      "tavuklusezer": "TAVUKLU SEZAR SALATA",
+      "falafelliborek": "FALAFELLİ BOWL",
+      "kurucaciklibiwl": "KURU CACIKLI TAVUKLU TABULE BOWL",
+      "kurucacikli": "KURU CACIKLI TAVUKLU TABULE BOWL",
+      "fettucini": "TAVUKLU FETTUCINE ALFREDO",
+      "fettuccine": "TAVUKLU FETTUCINE ALFREDO",
+      "fettuccıne": "TAVUKLU FETTUCINE ALFREDO",
+      "ucpeynirli": "3 PEYNİRLİ AVOKADOLU SANDVİÇ",
+      "ucpeynirliavakadolu": "3 PEYNİRLİ AVOKADOLU SANDVİÇ",
+      "tambugdaylihindifumeki": "TAM BUĞDAYLI HİNDİ FÜMELİ VE KAŞARLI SANDVİÇ",
+      "hindifumekasarpey": "HİNDİ FÜMELİ VE KAŞAR PEYNİRLİ SANDVİÇ",
+      "citirtav": "ÇITIR TAVUKLU SANDVİÇ",
+      "kadinbudu": "KADINBUDU KÖFTE VE PATATES KAVURMA",
+      "kremalimantarli": "KREMALI 3 MANTAR SOSLU TAVUKLU PANCARLI PENNE MAKARNA",
+      "dipsos": "DORİTOS DİP SOS",
+      "doritoslucaliforniaroll": "DORITOS CALIFORNIA ROLL",
+      "doritosonigiritonbalikli": "DORITOS TON BALIKLI ONİGİRİ",
+      "doritosonigiricoliforina": "DORITOS CALIFORNIA ONİGİRİ",
+      "doritostonbaliklio": "DORITOS TON BALIKLI ONİGİRİ",
+      "doritoscaliforniao": "DORITOS CALIFORNIA ONİGİRİ",
+      "tonbaliklionihiri": "TON BALIKLI ONİGİRİ",
+      "italyanusulutav": "İTALYAN USULÜ TAVUK VE RİSOTTO",
+      "visneliyaprsarm": "VİŞNELİ YAPRAK SARMA",
+      "makarnasal": "MAKARNA SALATASI",
+      "biberdolmasi": "ZEYTİNYAĞLI BİBER DOLMA",
+      "kurupatlicandolmasi": "KURU PATLICAN DOLMA",
+      "haslanmistavukgogsubasmati": "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI",
+      "haslanmistavukgogsupirincpilavi": "HAŞLANMIŞ TAVUK GÖĞSÜ VE PİRİNÇ PİLAVI"
+    };
+
+    // Turkish Char & Symbol Normalizer
     function normalizeTr(str) {
       if (!str) return '';
       return str
@@ -324,72 +526,59 @@ Mercimek çorbası..."></textarea>
         .replace(/[^a-z0-9]/g, '');
     }
 
-    // Warehouse shorthand aliases
-    const SHORTCUTS = {
-      "ruzsal": "RUS SALATASI",
-      "haydarl": "HAYDARİ",
-      "zaksuka": "ŞAKŞUKA",
-      "hadtavgogsubasmati": "HAŞLANMIŞ TAVUK GÖĞSÜ VE BASMATİ PİRİNÇ PİLAVI",
-      "hibduetlisiye": "HİNDİ ETLİ SİYEZ BULGUR PİLAVI",
-      "yaylacor": "AYRAN AŞI ÇORBASI",
-      "sehriyelicor": "ŞEHRİYELİ TAVUK ÇORBASI",
-      "mercimekcor": "MERCİMEK ÇORBASI",
-      "ezogelincor": "EZOGELİN ÇORBASI",
-      "dolutos": "DORITOS DOLUTOS",
-      "damlacikpankek": "DAMLA ÇİKOLATALI PANCAKE",
-      "korisoslutav": "KÖRİ SOSLU TAVUK VE KESME PEYNİRLİ ERİŞTE",
-      "nohutlutavpil": "NOHUTLU PİLAV VE TAVUK",
-      "tavsebzelinoodle": "TAVUKLU SEBZELİ NOODLE",
-      "lahanasarma": "ZEYTİNYAĞLI LAHANA SARMA",
-      "barbunyapilaki": "ZEYTİNYAĞLI BARBUNYA PİLAKİ 250 GR",
-      "cigkoftesushi": "ÇİĞ KÖFTE SUSHİ",
-      "begendilikofte": "BEĞENDİLİ KÖFTE",
-      "begendilitavuksote": "BEĞENDİLİ TAVUK SOTE",
-      "izgaratavsis": "IZGARA TAVUK ŞİŞ VE SİYEZ BULGURU",
-      "vegankoftemakarna": "VEGAN KÖFTE VE MAKARNA",
-      "maccheese": "MAC&CHEESE",
-      "macecheese": "MAC&CHEESE",
-      "izmirkofte": "İZMİR KÖFTE",
-      "tatlieksi": "TATLI EKŞİ SOSLU TAVUK SOTE VE ALFREDO SOSLU SPAGETTİ",
-      "kinoakisiri": "KİNOA KISIRI",
-      "hinditandir": "HİNDİ TANDIRLI İÇ PİLAV",
-      "tahinpekmezlipankek": "TAHİN PEKMEZLİ PANCAKE",
-      "tavsedat": "TAVUKLU SEZAR SALATA",
-      "falafelliborek": "FALAFELLİ BOWL",
-      "kurucaciklibiwl": "KURU CACIKLI TAVUKLU TABULE BOWL",
-      "kurucacikli": "KURU CACIKLI TAVUKLU TABULE BOWL"
-    };
+    // Levenshtein similarity distance for typos
+    function levenshteinDistance(a, b) {
+      const m = a.length, n = b.length;
+      if (m === 0) return n;
+      if (n === 0) return m;
+      const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
 
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[m][n];
+    }
+
+    // Smart Matcher
     function findBestMatch(queryText, masterList, usedCodes) {
       const qNorm = normalizeTr(queryText);
       if (!qNorm) return null;
 
-      // 1. Shorthand check
+      // 1. Shorthand Table Check
       if (SHORTCUTS[qNorm]) {
         const target = SHORTCUTS[qNorm];
         const item = masterList.find(m => m.name === target && !usedCodes.has(m.code));
         if (item) return item;
       }
 
-      // 2. Exact match
+      // 2. Exact Normalized Match
       for (const item of masterList) {
         if (usedCodes.has(item.code)) continue;
         if (normalizeTr(item.name) === qNorm) return item;
       }
 
-      // 3. Inclusion match
+      // 3. Substring Inclusion Match
       for (const item of masterList) {
         if (usedCodes.has(item.code)) continue;
         const iNorm = normalizeTr(item.name);
-        if (iNorm.includes(qNorm) || qNorm.includes(iNorm)) {
+        if (iNorm.includes(qNorm) || (qNorm.length > 5 && qNorm.includes(iNorm))) {
           return item;
         }
       }
 
-      // 4. Token keyword matching
+      // 4. Token Keyword Matching
       const qTokens = queryText.toLowerCase().replace(/[^a-z0-9ğüşıöç ]/g, ' ').split(/\s+/).filter(t => t.length > 2);
-      let bestItem = null;
-      let maxScore = 0;
+      let bestTokenItem = null;
+      let maxTokenScore = 0;
 
       for (const item of masterList) {
         if (usedCodes.has(item.code)) continue;
@@ -398,48 +587,69 @@ Mercimek çorbası..."></textarea>
         for (const token of qTokens) {
           if (iNameLower.includes(token)) score++;
         }
-        if (score > maxScore && score >= Math.min(2, qTokens.length)) {
-          maxScore = score;
-          bestItem = item;
+        if (score > maxTokenScore && score >= Math.min(2, qTokens.length)) {
+          maxTokenScore = score;
+          bestTokenItem = item;
+        }
+      }
+      if (bestTokenItem) return bestTokenItem;
+
+      // 5. Fuzzy Levenshtein Distance (typo recovery)
+      let bestFuzzyItem = null;
+      let minDistance = Infinity;
+
+      for (const item of masterList) {
+        if (usedCodes.has(item.code)) continue;
+        const iNorm = normalizeTr(item.name);
+        const dist = levenshteinDistance(qNorm, iNorm);
+        // Allow typo threshold based on word length
+        if (dist <= 3 && dist < minDistance) {
+          minDistance = dist;
+          bestFuzzyItem = item;
         }
       }
 
-      return bestItem;
+      return bestFuzzyItem;
     }
 
+    // Change Mode: Sequential or Fixed B-001
     function setMode(mode) {
       document.getElementById('unselectedMode').value = mode;
       const seqBtn = document.getElementById('modeSeqBtn');
       const fixBtn = document.getElementById('modeFixBtn');
 
       if (mode === 'sequential') {
-        seqBtn.className = "flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900 font-semibold";
+        seqBtn.className = "flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900";
         fixBtn.className = "flex-1 py-1.5 rounded-xl transition-all text-slate-600 hover:text-slate-900";
       } else {
-        fixBtn.className = "flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900 font-semibold";
+        fixBtn.className = "flex-1 py-1.5 rounded-xl transition-all shadow-xs bg-white text-slate-900";
         seqBtn.className = "flex-1 py-1.5 rounded-xl transition-all text-slate-600 hover:text-slate-900";
+      }
+
+      // If already processed, recalculate B Group
+      if (currentResults.length > 0) {
+        recalculateBGroup();
       }
     }
 
+    // Main Engine: Address Allocation
     function processAddressing() {
       const rawInput = document.getElementById('orderInput').value.trim();
       if (!rawInput) {
-        showToast('Lütfen önce sıralanacak ürün listesini yapıştırın', 'warning');
+        showToast('Lütfen önce toplanacak ürün listesini yapıştırın', 'warning');
         return;
       }
 
       const lines = rawInput.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      const unselectedMode = document.getElementById('unselectedMode').value;
-
       const usedCodes = new Set();
-      const matchedA = [];
+      matchedAItems = [];
       const notFoundQueries = [];
 
       lines.forEach((query) => {
         const match = findBestMatch(query, MASTER_DATA, usedCodes);
         if (match) {
           usedCodes.add(match.code);
-          matchedA.push({
+          matchedAItems.push({
             query: query,
             code: match.code,
             name: match.name,
@@ -451,25 +661,48 @@ Mercimek çorbası..."></textarea>
         }
       });
 
-      // A-001, A-002...
-      matchedA.forEach((item, idx) => {
-        const num = 1 + idx;
-        item.newLoc = `A-${String(num).padStart(3, '0')}`;
+      // Show/Hide Unmatched Warnings
+      const alertCard = document.getElementById('unmatchedAlertCard');
+      const unmatchedList = document.getElementById('unmatchedList');
+      if (notFoundQueries.length > 0) {
+        alertCard.classList.remove('hidden');
+        document.getElementById('unmatchedCountText').textContent = `${notFoundQueries.length} satır eşleştirilemedi`;
+        unmatchedList.innerHTML = notFoundQueries.map(q => `<li class="py-1 px-1 flex justify-between"><span>${q}</span><span class="text-rose-400 text-[10px]">Stokta Yok</span></li>`).join('');
+      } else {
+        alertCard.classList.add('hidden');
+      }
+
+      // Assign A-001, A-002...
+      matchedAItems.forEach((item, idx) => {
+        item.newLoc = `A-${String(idx + 1).padStart(3, '0')}`;
         item.sira = idx + 1;
       });
 
-      // Unselected items (B Group)
+      // Filter remaining 108 products into B Group
       const unselected = MASTER_DATA.filter(item => !usedCodes.has(item.code));
+      unselectedBItems = unselected.map(item => ({
+        code: item.code,
+        name: item.name,
+        oldLoc: item.oldLoc,
+        group: 'B'
+      }));
+
+      recalculateBGroup();
+      showToast(`${matchedAItems.length} ürün A-001'den başlayarak adreslendi!`, 'success');
+    }
+
+    function recalculateBGroup() {
+      const unselectedMode = document.getElementById('unselectedMode').value;
       let bCounter = 1;
 
-      const formattedB = unselected.map((item, idx) => {
+      const formattedB = unselectedBItems.map((item, idx) => {
         let newLoc = 'B-001';
         if (unselectedMode === 'sequential') {
           newLoc = `B-${String(bCounter).padStart(3, '0')}`;
           bCounter++;
         }
         return {
-          sira: matchedA.length + idx + 1,
+          sira: matchedAItems.length + idx + 1,
           newLoc: newLoc,
           code: item.code,
           name: item.name,
@@ -478,15 +711,46 @@ Mercimek çorbası..."></textarea>
         };
       });
 
-      currentResults = [...matchedA, ...formattedB];
+      currentResults = [...matchedAItems, ...formattedB];
 
-      document.getElementById('statMatched').textContent = matchedA.length;
+      // Update statistics
+      const total = MASTER_DATA.length;
+      const matched = matchedAItems.length;
+      const percent = Math.round((matched / total) * 100);
+
+      document.getElementById('statMatched').textContent = matched;
       document.getElementById('statUnmatched').textContent = formattedB.length;
+      document.getElementById('bGroupCountLabel').textContent = `${formattedB.length} ürün`;
+      document.getElementById('statMatchPercent').textContent = `%${percent} aktif`;
 
       renderTable();
-      showToast(`${matchedA.length} ürün A grubuna adreslendi`, 'success');
     }
 
+    // Move items in A group up or down
+    function moveItem(index, direction) {
+      if (direction === 'up' && index > 0) {
+        const temp = matchedAItems[index];
+        matchedAItems[index] = matchedAItems[index - 1];
+        matchedAItems[index - 1] = temp;
+      } else if (direction === 'down' && index < matchedAItems.length - 1) {
+        const temp = matchedAItems[index];
+        matchedAItems[index] = matchedAItems[index + 1];
+        matchedAItems[index + 1] = temp;
+      } else {
+        return;
+      }
+
+      // Re-index A addresses
+      matchedAItems.forEach((item, idx) => {
+        item.newLoc = `A-${String(idx + 1).padStart(3, '0')}`;
+        item.sira = idx + 1;
+      });
+
+      recalculateBGroup();
+      showToast('Sıralama güncellendi', 'success');
+    }
+
+    // Render Table
     function renderTable() {
       const tbody = document.getElementById('resultsTableBody');
       const searchTerm = normalizeTr(document.getElementById('tableSearch').value || '');
@@ -495,20 +759,20 @@ Mercimek çorbası..."></textarea>
       const filtered = currentResults.filter(item => {
         if (currentFilter !== 'ALL' && item.group !== currentFilter) return false;
         if (searchTerm) {
-          const hay = normalizeTr(item.code + item.name + item.newLoc + item.oldLoc);
+          const hay = normalizeTr(item.code + item.name + item.newLoc + item.oldLoc + (item.query || ''));
           return hay.includes(searchTerm);
         }
         return true;
       });
 
-      document.getElementById('tableRowCount').textContent = `${filtered.length} kayıt`;
+      document.getElementById('tableRowCount').textContent = `${filtered.length} kayıt listelendi`;
 
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="py-12 text-center text-slate-400">
+            <td colspan="6" class="py-14 text-center text-slate-400">
               <i class="ph ph-magnifying-glass text-3xl mb-1 text-slate-300 block"></i>
-              Eşleşen ürün bulunamadı
+              Aramanıza uygun ürün bulunamadı.
             </td>
           </tr>
         `;
@@ -517,35 +781,53 @@ Mercimek çorbası..."></textarea>
 
       filtered.forEach((row) => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50/70 transition-colors border-b border-slate-100";
+        tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100";
 
         const isA = row.group === 'A';
         const locBadge = isA
-          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg font-mono font-semibold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200/60">${row.newLoc}</span>`
-          : `<span class="inline-flex items-center px-2 py-0.5 rounded-lg font-mono font-semibold text-xs bg-amber-50 text-amber-700 border border-amber-200/60">${row.newLoc}</span>`;
+          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg font-mono font-bold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-2xs">${row.newLoc}</span>`
+          : `<span class="inline-flex items-center px-2 py-0.5 rounded-lg font-mono font-bold text-xs bg-amber-50 text-amber-700 border border-amber-200/60">${row.newLoc}</span>`;
+
+        // Arrow actions only for A Group
+        let orderActions = `<span class="text-slate-300">-</span>`;
+        if (isA) {
+          const aIndex = matchedAItems.findIndex(i => i.code === row.code);
+          orderActions = `
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="moveItem(${aIndex}, 'up')" title="Yukarı Taşı" class="p-1 rounded hover:bg-slate-200 text-slate-500 active:scale-90 transition ${aIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}">
+                <i class="ph ph-caret-up text-xs font-bold"></i>
+              </button>
+              <button onclick="moveItem(${aIndex}, 'down')" title="Aşağı Taşı" class="p-1 rounded hover:bg-slate-200 text-slate-500 active:scale-90 transition ${aIndex === matchedAItems.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}">
+                <i class="ph ph-caret-down text-xs font-bold"></i>
+              </button>
+            </div>
+          `;
+        }
 
         tr.innerHTML = `
           <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${row.sira}</td>
           <td class="py-2.5 px-3 text-center">${locBadge}</td>
           <td class="py-2.5 px-3 font-mono text-slate-400 text-[11px]">${row.code}</td>
-          <td class="py-2.5 px-3 font-medium text-slate-800">
-            ${row.name}
-            ${row.query && row.query !== row.name ? `<span class="text-[10px] block text-slate-400 font-normal">Aranan: ${row.query}</span>` : ''}
+          <td class="py-2.5 px-3">
+            <span class="font-semibold text-slate-800">${row.name}</span>
+            ${row.query && normalizeTr(row.query) !== normalizeTr(row.name) ? `<span class="text-[10px] block text-slate-400 font-normal">Aranan: "${row.query}"</span>` : ''}
           </td>
           <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${row.oldLoc}</td>
+          <td class="py-2.5 px-2 text-center no-print">${orderActions}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
+    // Segment Filter (ALL / A / B)
     function setFilter(filter) {
       currentFilter = filter;
       ['ALL', 'A', 'B'].forEach(f => {
         const btn = document.getElementById(`filterBtn${f}`);
         if (f === filter) {
-          btn.className = "px-2.5 py-1 rounded-lg bg-white text-slate-900 font-semibold shadow-2xs";
+          btn.className = "px-3 py-1 rounded-lg bg-white text-slate-900 shadow-2xs font-bold";
         } else {
-          btn.className = "px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900";
+          btn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold";
         }
       });
       renderTable();
@@ -558,18 +840,96 @@ Mercimek çorbası..."></textarea>
     function clearInput() {
       document.getElementById('orderInput').value = '';
       updateLineCount();
+      document.getElementById('unmatchedAlertCard').classList.add('hidden');
     }
 
     function updateLineCount() {
       const text = document.getElementById('orderInput').value.trim();
       const count = text ? text.split('\n').filter(l => l.trim().length > 0).length : 0;
-      document.getElementById('inputLineCount').textContent = `${count} satır girildi`;
+      document.getElementById('inputLineCount').textContent = `${count} ürün girildi`;
     }
 
     document.getElementById('orderInput').addEventListener('input', updateLineCount);
 
-    function loadLatestOrder() {
-      document.getElementById('orderInput').value = `Su böreği 
+    // Multi-Sheet Professional Excel Export
+    function exportToExcel() {
+      if (currentResults.length === 0) {
+        showToast('Dışa aktarmak için önce bir liste oluşturun', 'warning');
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+
+      // 1. Sheet: Full 108 Items (Mikro Import Ready)
+      const fullData = currentResults.map(item => ({
+        "Sıra": item.sira,
+        "Yeni Adres (sto_yer_kod)": item.newLoc,
+        "Stok Kodu (sto_kod)": item.code,
+        "Stok İsmi (sto_isim)": item.name,
+        "Eski Adres": item.oldLoc,
+        "Grup": item.group === 'A' ? 'A Grubu (Toplanacak)' : 'B Grubu (Diğer)'
+      }));
+      const wsFull = XLSX.utils.json_to_sheet(fullData);
+      wsFull['!cols'] = [{ wch: 6 }, { wch: 24 }, { wch: 18 }, { wch: 52 }, { wch: 12 }, { wch: 22 }];
+      XLSX.utils.book_append_sheet(wb, wsFull, "Tum_Depo_Mikro");
+
+      // 2. Sheet: Only A Group (Picking List)
+      const aData = matchedAItems.map((item, idx) => ({
+        "Sıra": idx + 1,
+        "Raf Kodu (sto_yer_kod)": item.newLoc,
+        "Stok Kodu": item.code,
+        "Stok İsmi": item.name,
+        "Eski Raf": item.oldLoc
+      }));
+      const wsA = XLSX.utils.json_to_sheet(aData);
+      wsA['!cols'] = [{ wch: 6 }, { wch: 22 }, { wch: 18 }, { wch: 52 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsA, "Sadece_A_Grubu_Toplama");
+
+      const today = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `Mikro_Depo_Adresleri_${today}.xlsx`);
+      showToast('Excel dosyası başarıyla indirildi', 'success');
+    }
+
+    // Copy TSV to Clipboard
+    function copyTableToClipboard() {
+      if (currentResults.length === 0) {
+        showToast('Kopyalanacak veri yok', 'warning');
+        return;
+      }
+
+      let tsv = "Sıra\tYeni Adres\tStok Kodu\tStok İsmi\tEski Adres\n";
+      currentResults.forEach(r => {
+        tsv += `${r.sira}\t${r.newLoc}\t${r.code}\t${r.name}\t${r.oldLoc}\n`;
+      });
+
+      const tempArea = document.createElement('textarea');
+      tempArea.value = tsv;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Tablo kopyalandı! Excel veya ERP ekranına yapıştırabilirsiniz.', 'success');
+      } catch (err) {
+        showToast('Kopyalama yapılamadı', 'warning');
+      }
+      document.body.removeChild(tempArea);
+    }
+
+    // Print A4 Handout Sheet
+    function printOrderSheet() {
+      if (currentResults.length === 0) {
+        showToast('Yazdırmak için önce liste oluşturun', 'warning');
+        return;
+      }
+      document.getElementById('printDate').textContent = new Date().toLocaleString('tr-TR');
+      document.getElementById('printTotal').textContent = `${matchedAItems.length} Aktif Raf / Toplam 108 Stok`;
+      window.print();
+    }
+
+    // Quick Sample Loaders
+    function loadSample(id) {
+      if (id === 1) {
+        document.getElementById('orderInput').value = `Su böreği 
 Çiğ köfte Sushi
 Kabak mücver 
 Acılı ezme 
@@ -605,66 +965,58 @@ Tahin pekmezli pankek
 Damla cik pankek
 Köri soslu tav
 Dolutos`;
+      } else if (id === 2) {
+        document.getElementById('orderInput').value = `Üç peynirli avokadolu
+Tam buğdaylı hindi fümeki 
+Kaşar peynirli salamlı
+Kaşar peynir zeytin ezmeli
+Çıtır tavuklu
+Beyaz peynirli zeytin ezmeli
+Hindi füme kaşar peynirli
+Calıfornıa roll
+Whıte salmon 
+Doritoslu calıfornıa roll
+Kyoto mix
+Dip sos
+Tavuklu Sezer salata
+Avokadolu baklagil salatası
+Falafelli börek
+Kuru cacıklı bıwl
+Avokadolu füme somon bowl
+Havuç Tarator
+Tavuk döner dürüm`;
+      } else if (id === 3) {
+        document.getElementById('orderInput').value = `Çiğköfte porsiyon 
+Zeytinyağlı lahana sarması 
+Şakşuka 
+Kabak mücver 
+Zeytinyağlı biber dolması 
+Kısır
+Barbunya pilaki
+Rus salatası 
+Tavuklu fettuccine 
+Nohutlu tavuklu pilav 
+Zeytinyağlı yaprak sarma
+Haşlanmış tavuk göğsü ve pirinç pilavı 
+Kuru patlıcan dolması 
+Tavuklu sebzeli noodle 
+Makarna salatası 
+Falefelli bowl
+Doritos colıforina roll
+Doritos onigiri ton balıklı 
+Doritos onigiri colıforina 
+Kionalı tavuk köftesi ve sebze sote
+Bezelye ve arpa şehriyeli pirinç pilavı 
+İrmik helvası 
+Mercimek çorbası 
+Ezogelin çorbası 
+Şehriyeli tavuk çorbası`;
+      }
       updateLineCount();
       processAddressing();
     }
 
-    function exportToExcel() {
-      if (currentResults.length === 0) {
-        showToast('Dışa aktarmak için önce bir liste oluşturun', 'warning');
-        return;
-      }
-
-      const excelData = currentResults.map(item => ({
-        "Sıra No": item.sira,
-        "Yeni Adres (sto_yer_kod)": item.newLoc,
-        "Stok Kodu (sto_kod)": item.code,
-        "Stok İsmi (sto_isim)": item.name,
-        "Eski Adres": item.oldLoc,
-        "Grup": item.group === 'A' ? 'A Grubu (Seçilen)' : 'B Grubu (Diğer)'
-      }));
-
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(excelData);
-
-      ws['!cols'] = [
-        { wch: 8 },
-        { wch: 24 },
-        { wch: 18 },
-        { wch: 50 },
-        { wch: 14 },
-        { wch: 20 }
-      ];
-
-      XLSX.utils.book_append_sheet(wb, ws, "Depo_Adresleri");
-      XLSX.writeFile(wb, `Depo_Raf_Adresleri_${new Date().toISOString().slice(0, 10)}.xlsx`);
-      showToast('Excel dosyası indirildi', 'success');
-    }
-
-    function copyTableToClipboard() {
-      if (currentResults.length === 0) {
-        showToast('Kopyalanacak veri yok', 'warning');
-        return;
-      }
-
-      let tsv = "Sıra\tYeni Adres\tStok Kodu\tStok İsmi\tEski Adres\n";
-      currentResults.forEach(r => {
-        tsv += `${r.sira}\t${r.newLoc}\t${r.code}\t${r.name}\t${r.oldLoc}\n`;
-      });
-
-      const tempArea = document.createElement('textarea');
-      tempArea.value = tsv;
-      document.body.appendChild(tempArea);
-      tempArea.select();
-      try {
-        document.execCommand('copy');
-        showToast('Tablo kopyalandı, Excel\'e yapıştırabilirsiniz', 'success');
-      } catch (err) {
-        showToast('Kopyalama yapılamadı', 'warning');
-      }
-      document.body.removeChild(tempArea);
-    }
-
+    // Dynamic Island Toast
     function showToast(msg, type = 'success') {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toastMsg');
@@ -672,22 +1024,23 @@ Dolutos`;
 
       toastMsg.textContent = msg;
       if (type === 'warning') {
-        toastIcon.className = "ph ph-warning-circle text-amber-400 text-base";
+        toastIcon.className = "ph ph-warning-circle text-amber-400 text-base font-bold";
       } else {
-        toastIcon.className = "ph ph-check-circle text-emerald-400 text-base";
+        toastIcon.className = "ph ph-check-circle text-emerald-400 text-base font-bold";
       }
 
-      toast.classList.remove('-translate-y-16', 'opacity-0', 'pointer-events-none');
+      toast.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
       toast.classList.add('translate-y-0', 'opacity-100');
 
       setTimeout(() => {
-        toast.classList.add('-translate-y-16', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
         toast.classList.remove('translate-y-0', 'opacity-100');
-      }, 2800);
+      }, 2600);
     }
 
+    // Auto-run with Sample 1 on load
     window.onload = function() {
-      loadLatestOrder();
+      loadSample(1);
     };
   </script>
 </body>
